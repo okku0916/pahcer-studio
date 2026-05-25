@@ -147,6 +147,21 @@ export class ExecutionService extends EventEmitter {
   }
 
   /**
+   * テスト実行コメントを更新する
+   */
+  async updateExecutionComment(
+    executionId: string,
+    comment: string | null,
+  ): Promise<TestExecution | null> {
+    await this.executionRepository.updateProgress(executionId, { comment });
+    const execution = await this.executionRepository.findById(executionId);
+    if (execution) {
+      this.emit('execution:status', { executionId, status: execution.status, execution });
+    }
+    return execution;
+  }
+
+  /**
    * pacher実行のメインロジック
    */
   private async executePacher(executionId: string, request: TestExecutionRequest): Promise<void> {

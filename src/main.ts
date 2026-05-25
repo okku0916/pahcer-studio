@@ -100,6 +100,13 @@ ipcMain.handle('execution:delete', async (event, executionId: string) => {
   await executionService.deleteExecution(executionId);
 });
 
+ipcMain.handle(
+  'execution:updateComment',
+  async (event, { executionId, comment }: { executionId: string; comment: string | null }) => {
+    return executionService.updateExecutionComment(executionId, comment);
+  },
+);
+
 // 分析関連のIPCハンドラー
 ipcMain.handle('analysis:analyze', async (event, request: AnalysisRequest) => {
   return await analysisService.analyze(request);

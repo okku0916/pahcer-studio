@@ -56,7 +56,7 @@ const Visualizer: React.FC<VisualizerProps> = ({ selectedExecution, onError }) =
   const [seedDraft, setSeedDraft] = useState<string>('0');
   const [loadingCaseOutput, setLoadingCaseOutput] = useState(false);
   // 表示倍率 (%). 25〜150
-  const [scalePct, setScalePct] = useState<number>(100);
+  const [scalePct, setScalePct] = useState<number>(80);
 
   // ビジュアライザアセットの存在確認
   const [visualizerReady, setVisualizerReady] = useState<boolean>(false);

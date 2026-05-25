@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TextField,
 } from '@mui/material';
 import type { TestExecution, TestExecutionStatus } from '../../../schemas/execution';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -28,6 +29,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import TimelapseIcon from '@mui/icons-material/Timelapse';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface TestHistoryTableProps {
   executions: TestExecution[];
@@ -53,6 +55,10 @@ const TestHistoryTable: React.FC<TestHistoryTableProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [executionToDelete, setExecutionToDelete] = useState<TestExecution | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [executionToEdit, setExecutionToEdit] = useState<TestExecution | null>(null);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
 
   // テーブルヘッダーの定義
   const columnDefinitions = [
@@ -167,6 +173,46 @@ const TestHistoryTable: React.FC<TestHistoryTableProps> = ({
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setExecutionToDelete(null);
+  };
+
+  const handleEditCommentClick = (event: React.MouseEvent, execution: TestExecution) => {
+    event.stopPropagation();
+    setExecutionToEdit(execution);
+    setCommentDraft(execution.comment || '');
+    setCommentDialogOpen(true);
+  };
+
+  const handleCommentCancel = () => {
+    setCommentDialogOpen(false);
+    setExecutionToEdit(null);
+    setCommentDraft('');
+  };
+
+  const handleCommentSave = async () => {
+    if (!executionToEdit?.id) return;
+    setSavingComment(true);
+    try {
+      const normalizedComment = commentDraft.trim();
+      const updated = await window.electronAPI.execution.updateComment(
+        executionToEdit.id,
+        normalizedComment === '' ? null : normalizedComment,
+      );
+
+      setCommentDialogOpen(false);
+      setExecutionToEdit(null);
+      setCommentDraft('');
+
+      if (updated && selectedExecution?.id === updated.id) {
+        onExecutionSelect(updated);
+      }
+
+      await onRefresh();
+    } catch (err) {
+      console.error('Error updating execution comment:', err);
+      onError('コメントの更新に失敗しました');
+    } finally {
+      setSavingComment(false);
+    }
   };
 
   const getStatusColor = (status: TestExecutionStatus | undefined) => {
@@ -323,16 +369,26 @@ const TestHistoryTable: React.FC<TestHistoryTableProps> = ({
                     : '-'}
                 </TableCell>
                 <TableCell sx={{ py: 0.5, px: 1 }}>
-                  <Tooltip title="削除" disableFocusListener>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleDeleteClick(e, execution)}
-                      color="error"
-                      disabled={deleting}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Tooltip title="コメント編集" disableFocusListener>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleEditCommentClick(e, execution)}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="削除" disableFocusListener>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleDeleteClick(e, execution)}
+                        color="error"
+                        disabled={deleting}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -374,6 +430,36 @@ const TestHistoryTable: React.FC<TestHistoryTableProps> = ({
           </Button>
           <Button onClick={handleDeleteConfirm} color="error" disabled={deleting}>
             {deleting ? <CircularProgress size={16} /> : '削除'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Comment Dialog */}
+      <Dialog
+        open={commentDialogOpen}
+        onClose={handleCommentCancel}
+        aria-labelledby="comment-dialog-title"
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle id="comment-dialog-title">コメントの編集</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="コメント"
+            fullWidth
+            autoFocus
+            margin="dense"
+            value={commentDraft}
+            onChange={(e) => setCommentDraft(e.target.value)}
+            placeholder="コメントを入力"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCommentCancel} disabled={savingComment}>
+            キャンセル
+          </Button>
+          <Button onClick={handleCommentSave} disabled={savingComment}>
+            {savingComment ? <CircularProgress size={16} /> : '保存'}
           </Button>
         </DialogActions>
       </Dialog>
