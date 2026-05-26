@@ -87,6 +87,8 @@ AHC プロジェクトディレクトリ内で pahcer-studio をクローンし�
 # your-ahc-project ディレクトリ内で実行
 git clone https://github.com/yunix-kyopro/pahcer-studio.git
 cd pahcer-studio
+```
+```bash
 # このフォーク版を使う場合
 git clone https://github.com/okku0916/pahcer-studio.git
 cd pahcer-studio
