@@ -82,12 +82,13 @@ pahcer init
 ### 3. pahcer-studio のクローン
 
 AHC プロジェクトディレクトリ内で pahcer-studio をクローンします。
-このフォーク版を使う場合は、あなたのフォークURLに置き換えてください：
 
 ```bash
 # your-ahc-project ディレクトリ内で実行
-# 例: フォークしたリポジトリを使用する場合
-git clone https://github.com/<your-account>/pahcer-studio.git
+git clone https://github.com/yunix-kyopro/pahcer-studio.git
+cd pahcer-studio
+# このフォーク版を使う場合
+git clone https://github.com/okku0916/pahcer-studio.git
 cd pahcer-studio
 ```
 
