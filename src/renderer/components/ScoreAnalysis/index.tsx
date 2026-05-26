@@ -1,6 +1,17 @@
 import type React from 'react';
-import { useEffect, useState, useCallback } from 'react';
-import { Box, Typography, CircularProgress, Alert } from '@mui/material';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Alert,
+  Paper,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material';
 import type { TestExecution } from '../../../schemas/execution';
 import type {
   AnalysisRequest,
@@ -10,6 +21,7 @@ import type {
 import AnalysisSettings from './AnalysisSettings';
 import ExecutionSelectionTable from './ExecutionSelectionTable';
 import AnalysisChart from './AnalysisChart';
+import { useInputFilter } from './hooks/useGraphData';
 
 const ScoreAnalysis: React.FC = () => {
   // グローバル状態管理
@@ -22,6 +34,13 @@ const ScoreAnalysis: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(null);
   const [selectedExecutionIds, setSelectedExecutionIds] = useState<string[]>([]);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [xAxis, setXAxis] = useState('seed');
+  const [inputFilter, setInputFilter] = useState('');
+  const [currentInputFilter, setCurrentInputFilter] = useState('');
+  const [currentXAxis, setCurrentXAxis] = useState('seed');
+  const [applyingSettings, setApplyingSettings] = useState(false);
+  const [seedViewAxis, setSeedViewAxis] = useState('seed');
+  const [seedViewValue, setSeedViewValue] = useState('');
 
   /* =====================================================
    * 1. 初期ロード
@@ -199,6 +218,49 @@ const ScoreAnalysis: React.FC = () => {
     setFeatureFormat(value);
   };
 
+  const applyGraphSettings = () => {
+    setApplyingSettings(true);
+    setInputFilter(currentInputFilter);
+    setXAxis(currentXAxis);
+    setApplyingSettings(false);
+  };
+
+  const { filteredInputs, xValues } = useInputFilter(
+    analysisResult,
+    selectedExecutionIds,
+    xAxis,
+    inputFilter,
+  );
+
+  const seedAxisCandidates = useMemo(() => {
+    if (!analysisResult?.inputFeatures?.length) return ['seed'];
+    const featureKeys = new Set<string>();
+    analysisResult.inputFeatures.forEach((input) => {
+      Object.keys(input.features || {}).forEach((key) => featureKeys.add(key));
+    });
+    return Array.from(new Set(['seed', ...featureKeys]));
+  }, [analysisResult]);
+
+  const filteredSeeds = useMemo(() => {
+    if (!filteredInputs.length) return [] as number[];
+    if (!seedViewValue.trim()) return [] as number[];
+    const valueNumber = Number(seedViewValue);
+    if (Number.isNaN(valueNumber)) return [] as number[];
+
+    const seeds = filteredInputs
+      .filter((input) => {
+        if (seedViewAxis === 'seed') {
+          return input.seed === valueNumber;
+        }
+        const featureValue = input.features?.[seedViewAxis];
+        return typeof featureValue === 'number' && featureValue === valueNumber;
+      })
+      .map((input) => input.seed)
+      .sort((a, b) => a - b);
+
+    return seeds;
+  }, [filteredInputs, seedViewAxis, seedViewValue]);
+
   return (
     <Box sx={{ p: 3, overflowY: 'auto', height: '100%', maxWidth: '100%' }}>
       <Typography variant="h4" gutterBottom>
@@ -226,6 +288,60 @@ const ScoreAnalysis: React.FC = () => {
         onFeatureFormatChange={handleFeatureFormatChange}
         onUpdateAnalysisData={updateAnalysisData}
       />
+
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1.5,
+        }}
+      >
+        <Typography variant="subtitle1">Seed一覧</Typography>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel id="seed-view-axis-label">軸</InputLabel>
+            <Select
+              labelId="seed-view-axis-label"
+              label="軸"
+              value={seedViewAxis}
+              onChange={(e) => setSeedViewAxis(String(e.target.value))}
+            >
+              {seedAxisCandidates.map((key) => (
+                <MenuItem key={key} value={key}>
+                  {key}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            label="値"
+            size="small"
+            value={seedViewValue}
+            onChange={(e) => setSeedViewValue(e.target.value)}
+            placeholder="例: 5"
+          />
+          <Typography variant="body2" color="text.secondary">
+            {seedViewValue.trim()
+              ? `該当seed: ${filteredSeeds.length}件`
+              : '軸と値を入力するとseed一覧が表示されます'}
+          </Typography>
+        </Box>
+        {seedViewValue.trim() && (
+          <Box
+            sx={{
+              typography: 'body2',
+              whiteSpace: 'pre-wrap',
+              maxHeight: 120,
+              overflowY: 'auto',
+            }}
+          >
+            {filteredSeeds.length > 0 ? filteredSeeds.join(', ') : '該当するseedがありません'}
+          </Box>
+        )}
+      </Paper>
 
       {/* テスト実行選択セクション */}
       <ExecutionSelectionTable
@@ -259,6 +375,15 @@ const ScoreAnalysis: React.FC = () => {
           analysisResult={analysisResult}
           executions={executions}
           selectedExecutionIds={selectedExecutionIds}
+          xAxis={xAxis}
+          currentXAxis={currentXAxis}
+          currentInputFilter={currentInputFilter}
+          onXAxisChange={setCurrentXAxis}
+          onInputFilterChange={setCurrentInputFilter}
+          onApply={applyGraphSettings}
+          applying={applyingSettings}
+          filteredInputs={filteredInputs}
+          xValues={xValues}
         />
       )}
     </Box>
