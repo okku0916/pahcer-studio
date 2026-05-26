@@ -86,8 +86,11 @@ export function useChartDataset(
       return dataPoint;
     });
 
-    // 2-2) x 軸が seed 以外の場合だけ 20 分割で集約してノイズ低減
-    const aggEnabled = xAxis.trim() !== '' && xAxis.trim().toLowerCase() !== 'seed';
+    // 2-2) x 軸が seed 以外で、かつ小数が含まれる場合のみ 20 分割で集約
+    //      整数軸 (seed/N/M など) は集約せず、そのまま表示する
+    const isIntegerAxis = xValues.length > 0 && xValues.every((value) => Number.isInteger(value));
+    const aggEnabled =
+      xAxis.trim() !== '' && xAxis.trim().toLowerCase() !== 'seed' && !isIntegerAxis;
 
     let processed: ScoreGraphPoint[] = chartData.map((d) => ({ ...d }) as ScoreGraphPoint);
     if (aggEnabled) {

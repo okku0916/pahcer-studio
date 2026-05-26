@@ -69,7 +69,7 @@ const TestExecutionList: React.FC = () => {
         p: 1,
       }}
     >
-      <Allotment defaultSizes={[60, 40]}>
+      <Allotment defaultSizes={[40, 60]}>
         <Allotment.Pane minSize={300}>
           <TestHistoryTable
             executions={executions}

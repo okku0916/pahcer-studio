@@ -14,35 +14,29 @@ import {
 import type { TestExecution } from '../../../../schemas/execution';
 import type { AnalysisResponse } from '../../../../schemas/analysis';
 import { useChartDataset, type ScoreGraphPoint } from '../hooks/useScoreGraphData';
-import { useInputFilter } from '../hooks/useGraphData';
+import type { InputFeature } from '../../../../schemas/analysis';
 
 interface ScoreGraphProps {
   analysisResult: AnalysisResponse | null;
   executions: TestExecution[];
   selectedExecutionIds: string[];
-  inputFilter: string;
   useRelativeScore: boolean;
   useLogScale: boolean;
   xAxis: string;
+  filteredInputs: InputFeature[];
+  xValues: number[];
 }
 
 const ScoreGraph: React.FC<ScoreGraphProps> = ({
   analysisResult,
   executions,
   selectedExecutionIds,
-  inputFilter,
   useRelativeScore,
   useLogScale,
   xAxis,
+  filteredInputs,
+  xValues,
 }) => {
-  // 入力フィルタ適用 & X 軸計算
-  const { filteredInputs, xValues } = useInputFilter(
-    analysisResult,
-    selectedExecutionIds,
-    xAxis,
-    inputFilter,
-  );
-
   // Graph データ生成 (常に Hook を呼び出す)
   const { featureKeys, processedData, useAggregation } = useChartDataset(
     analysisResult,
@@ -182,7 +176,6 @@ const ScoreGraph: React.FC<ScoreGraphProps> = ({
                       <>
                         <p>{`${xAxis || 'seed'}: ${d.x}`}</p>
                         <p>{`ケース数: ${d.count}`}</p>
-                        <p style={{ whiteSpace: 'normal' }}>{`Seeds: ${d.seeds.join(', ')}`}</p>
                       </>
                     ) : (
                       <>

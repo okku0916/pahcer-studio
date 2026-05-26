@@ -255,7 +255,7 @@ const TestExecutionForm: React.FC = () => {
                   type="number"
                   value={testCaseCount}
                   onChange={(e) => setTestCaseCount(e.target.value)}
-                  InputProps={{ inputProps: { min: 1, max: 1000 } }}
+                  InputProps={{ inputProps: { min: 1 } }}
                   sx={{ width: '50%' }}
                 />
                 <TextField
